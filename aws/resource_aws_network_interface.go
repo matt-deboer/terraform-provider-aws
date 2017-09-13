@@ -56,7 +56,6 @@ func resourceAwsNetworkInterface() *schema.Resource {
 			"primary_ip": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"private_ips_count": &schema.Schema{
