@@ -32,6 +32,7 @@ The following arguments are supported:
 * `subnet_id` - (Required) Subnet ID to create the ENI in.
 * `description` - (Optional) A description for the network interface.
 * `private_ips` - (Optional) List of private IPs to assign to the ENI.
+* `primary_ip` - (Optional) The IP (out of the list of `private_ips`) which should serve as primary; defaults to the first IP in the list.
 * `private_ips_count` - (Optional) Number of private IPs to assign to the ENI.
 * `security_groups` - (Optional) List of security group IDs to assign to the ENI.
 * `attachment` - (Optional) Block to define the attachment of the ENI. Documented below.
