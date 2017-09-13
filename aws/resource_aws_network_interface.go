@@ -53,6 +53,12 @@ func resourceAwsNetworkInterface() *schema.Resource {
 				Set:      schema.HashString,
 			},
 
+			"primary_ip": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"private_ips_count": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -119,9 +125,12 @@ func resourceAwsNetworkInterfaceCreate(d *schema.ResourceData, meta interface{})
 		request.Groups = expandStringList(security_groups)
 	}
 
+	primary_ip := d.Get("primary_ip").(string)
+	log.Printf("[DEBUG] using primary_ip of '%s'", primary_ip)
+
 	private_ips := d.Get("private_ips").(*schema.Set).List()
 	if len(private_ips) != 0 {
-		request.PrivateIpAddresses = expandPrivateIPAddresses(private_ips)
+		request.PrivateIpAddresses = expandPrivateIPAddresses(private_ips, primary_ip)
 	}
 
 	if v, ok := d.GetOk("description"); ok {
@@ -168,7 +177,13 @@ func resourceAwsNetworkInterfaceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("subnet_id", eni.SubnetId)
 	d.Set("private_ip", eni.PrivateIpAddress)
 	d.Set("private_dns_name", eni.PrivateDnsName)
-	d.Set("private_ips", flattenNetworkInterfacesPrivateIPAddresses(eni.PrivateIpAddresses))
+	private_ips := flattenNetworkInterfacesPrivateIPAddresses(eni.PrivateIpAddresses)
+	primary_ip := ""
+	if len(private_ips) > 0 {
+		primary_ip = private_ips[0]
+	}
+	d.Set("private_ips", private_ips)
+	d.Set("primary_ip", primary_ip)
 	d.Set("security_groups", flattenGroupIdentifiers(eni.Groups))
 	d.Set("source_dest_check", eni.SourceDestCheck)
 
@@ -271,7 +286,7 @@ func resourceAwsNetworkInterfaceUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("attachment")
 	}
 
-	if d.HasChange("private_ips") {
+	if d.HasChange("private_ips") || d.HasChange("primary_ip") {
 		o, n := d.GetChange("private_ips")
 		if o == nil {
 			o = new(schema.Set)
@@ -309,6 +324,7 @@ func resourceAwsNetworkInterfaceUpdate(d *schema.ResourceData, meta interface{})
 			}
 		}
 
+		d.SetPartial("primary_ip")
 		d.SetPartial("private_ips")
 	}
 

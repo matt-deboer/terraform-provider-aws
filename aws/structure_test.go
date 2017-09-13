@@ -736,7 +736,7 @@ func TestExpandPrivateIPAddresses(t *testing.T) {
 		ip2,
 	}
 
-	result := expandPrivateIPAddresses(flattened)
+	result := expandPrivateIPAddresses(flattened, "")
 
 	if len(result) != 2 {
 		t.Fatalf("expected result had %d elements, but got %d", 2, len(result))
