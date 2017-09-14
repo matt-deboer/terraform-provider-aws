@@ -39,6 +39,36 @@ func TestAccAWSENI_basic(t *testing.T) {
 	})
 }
 
+func TestAccAWSENI_primarySecondary(t *testing.T) {
+	var conf ec2.NetworkInterface
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:      func() { testAccPreCheck(t) },
+		IDRefreshName: "aws_network_interface.bar",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckAWSENIDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccAWSENIConfigPrimarySecondary,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAWSENIExists("aws_network_interface.bar", &conf),
+					testAccCheckAWSENIAttributes(&conf),
+					resource.TestCheckResourceAttr(
+						"aws_network_interface.bar", "private_ips.#", "3"),
+					resource.TestCheckResourceAttr(
+						"aws_network_interface.bar", "primary_ip", "172.16.10.101"),
+					resource.TestCheckResourceAttrSet(
+						"aws_network_interface.bar", "private_dns_name"),
+					resource.TestCheckResourceAttr(
+						"aws_network_interface.bar", "tags.Name", "bar_interface"),
+					resource.TestCheckResourceAttr(
+						"aws_network_interface.bar", "description", "Managed by Terraform"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAWSENI_updatedDescription(t *testing.T) {
 	var conf ec2.NetworkInterface
 
@@ -329,6 +359,46 @@ resource "aws_security_group" "foo" {
 resource "aws_network_interface" "bar" {
     subnet_id = "${aws_subnet.foo.id}"
     private_ips = ["172.16.10.100"]
+    security_groups = ["${aws_security_group.foo.id}"]
+    description = "Managed by Terraform"
+    tags {
+        Name = "bar_interface"
+    }
+}
+`
+
+const testAccAWSENIConfigPrimarySecondary = `
+resource "aws_vpc" "foo" {
+	cidr_block = "172.16.0.0/16"
+	enable_dns_hostnames = true
+		tags {
+			Name = "testAccAWSENIConfig"
+		}
+}
+
+resource "aws_subnet" "foo" {
+    vpc_id = "${aws_vpc.foo.id}"
+    cidr_block = "172.16.10.0/24"
+    availability_zone = "us-west-2a"
+}
+
+resource "aws_security_group" "foo" {
+  vpc_id = "${aws_vpc.foo.id}"
+  description = "foo"
+  name = "foo"
+
+        egress {
+                from_port = 0
+                to_port = 0
+                protocol = "tcp"
+                cidr_blocks = ["10.0.0.0/16"]
+        }
+}
+
+resource "aws_network_interface" "bar" {
+    subnet_id = "${aws_subnet.foo.id}"
+	private_ips = ["172.16.10.100", "172.16.10.101", "172.16.10.102"]
+	primary_ip = "172.16.10.101"
     security_groups = ["${aws_security_group.foo.id}"]
     description = "Managed by Terraform"
     tags {
