@@ -750,8 +750,10 @@ func flattenNetworkInterfacesPrivateIPAddresses(dtos []*ec2.NetworkInterfacePriv
 		if len(dtos) > 1 {
 			ips = append(ips, "")
 			copy(ips[1:], ips)
+			ips[0] = primaryIP
+		} else {
+			ips = append(ips, primaryIP)
 		}
-		ips[0] = primaryIP
 	}
 
 	return ips
