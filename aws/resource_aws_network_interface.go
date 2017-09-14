@@ -178,9 +178,13 @@ func resourceAwsNetworkInterfaceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("private_dns_name", eni.PrivateDnsName)
 	private_ips := flattenNetworkInterfacesPrivateIPAddresses(eni.PrivateIpAddresses)
 	primary_ip := ""
+	if eni.PrivateIpAddress != nil {
+		primary_ip = *eni.PrivateIpAddress
+	}
 	if len(private_ips) > 0 {
 		primary_ip = private_ips[0]
 	}
+
 	d.Set("private_ips", private_ips)
 	d.Set("primary_ip", primary_ip)
 	d.Set("security_groups", flattenGroupIdentifiers(eni.Groups))
